@@ -1,0 +1,14 @@
+node_modules/
+dist/
+test-results/
+reports/
+allure-results/
+playwright-report/
+.playwright/
+*.snap
+*.png
+!tests/visual/__snapshots__/**/*.png
+.DS_Store
+.env
+.env.local
+*.log

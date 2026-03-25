@@ -1,0 +1,142 @@
+name: Tesla Playwright CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run nightly at 2 AM UTC — catches regressions from tesla.com updates
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      project:
+        description: 'Playwright project to run (leave empty for all)'
+        required: false
+        default: ''
+
+env:
+  FORCE_COLOR: 3   # Colored terminal output in CI logs
+
+jobs:
+  # ─── Lint & type-check ────────────────────────────────────────────────────
+  lint:
+    name: TypeScript Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npx tsc --noEmit
+
+  # ─── E2E Tests ────────────────────────────────────────────────────────────
+  test:
+    name: E2E (${{ matrix.project }})
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [chromium, firefox, webkit, api]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.project == 'api' && 'chromium' || matrix.project }}
+
+      - name: Run Playwright tests (${{ matrix.project }})
+        run: npx playwright test --project=${{ matrix.project }}
+        env:
+          CI: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results-${{ matrix.project }}
+          path: |
+            test-results/
+            reports/
+          retention-days: 30
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-report-${{ matrix.project }}
+          path: reports/html/
+          retention-days: 30
+
+  # ─── Mobile Tests ─────────────────────────────────────────────────────────
+  mobile-test:
+    name: Mobile E2E
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium webkit
+
+      - name: Run mobile tests
+        run: npx playwright test --project=mobile-chrome --project=mobile-safari
+        env:
+          CI: true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-results
+          path: test-results/
+          retention-days: 30
+
+  # ─── Report Summary ───────────────────────────────────────────────────────
+  report:
+    name: Merge & Publish Report
+    runs-on: ubuntu-latest
+    needs: [test, mobile-test]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-artifacts/
+
+      - name: Merge HTML reports
+        run: npx playwright merge-reports --reporter html all-artifacts/playwright-results-*/
+        continue-on-error: true
+
+      - name: Upload merged report
+        uses: actions/upload-artifact@v4
+        with:
+          name: merged-html-report
+          path: playwright-report/
+          retention-days: 90
