@@ -33,7 +33,7 @@ export class HomePage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    this.nav = page.locator('nav#dx-nav-container, header nav').first();
+    this.nav = page.locator('nav, header, [role="navigation"]').first();
     this.vehiclesMenu = page.locator('a[href*="/models"], a:has-text("Vehicles")').first();
     this.energyMenu = page.locator('a[href*="/energy"], a:has-text("Energy")').first();
     this.chargingMenu = page.locator('a[href*="/charging"], a:has-text("Charging")').first();
@@ -51,7 +51,7 @@ export class HomePage extends BasePage {
     this.cybertruck = page.locator('a[href*="/cybertruck"]').first();
 
     this.footer = page.locator('footer, #footer').first();
-    this.footerPrivacyLink = page.locator('a[href*="privacy"]').last();
+    this.footerPrivacyLink = page.locator('a:has-text("Privacy"), a[href*="privacy"], a[href*="Privacy"]').last();
   }
 
   async open() {

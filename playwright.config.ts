@@ -22,9 +22,17 @@ export default defineConfig({
     video: 'retain-on-failure',
     trace: 'on-first-retry',
     ignoreHTTPSErrors: true,
+    // Realistic browser headers — reduces bot-detection false positives
     extraHTTPHeaders: {
       'Accept-Language': 'en-US,en;q=0.9',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+      'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+      'sec-ch-ua-mobile': '?0',
+      'sec-ch-ua-platform': '"macOS"',
     },
+    // Use the real installed Chrome binary — has a legitimate browser fingerprint
+    // that passes Cloudflare bot detection, unlike Playwright's bundled Chromium
+    channel: 'chrome',
   },
 
   expect: {
@@ -40,7 +48,10 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        channel: 'chrome',   // Real Chrome — passes Cloudflare bot checks
+      },
     },
     {
       name: 'firefox',
@@ -52,7 +63,10 @@ export default defineConfig({
     },
     {
       name: 'mobile-chrome',
-      use: { ...devices['Pixel 7'] },
+      use: {
+        ...devices['Pixel 7'],
+        channel: 'chrome',
+      },
     },
     {
       name: 'mobile-safari',

@@ -2,7 +2,7 @@
 
 > Production-grade end-to-end test framework targeting [tesla.com](https://www.tesla.com), built with **Playwright + TypeScript**.
 
-![CI](https://github.com/YOUR_USERNAME/tesla-playwright-suite/actions/workflows/playwright.yml/badge.svg)
+![CI](https://github.com/pkb94/tesla-playwright-suite/actions/workflows/playwright.yml/badge.svg)
 ![Playwright](https://img.shields.io/badge/Playwright-1.x-45ba4b?logo=playwright)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6?logo=typescript)
 ![License](https://img.shields.io/badge/license-ISC-blue)
