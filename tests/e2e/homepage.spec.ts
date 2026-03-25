@@ -70,7 +70,10 @@ test.describe('Tesla Homepage', () => {
         !e.includes('analytics') &&
         !e.includes('gtm') &&
         !e.includes('403') &&
-        !e.includes('Failed to load resource')
+        !e.includes('Failed to load resource') &&
+        // 'Failed to fetch' is thrown by Tesla's own personalization/A-B
+        // fetch() calls that are blocked in headless automated contexts
+        !e.includes('Failed to fetch')
     );
     expect(critical).toHaveLength(0);
   });

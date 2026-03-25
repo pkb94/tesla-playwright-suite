@@ -5,7 +5,8 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 4 : undefined,
+  // Limit parallelism when using real Chrome to avoid launch contention
+  workers: process.env.CI ? 4 : 3,
 
   reporter: [
     ['html', { outputFolder: 'reports/html', open: 'never' }],
