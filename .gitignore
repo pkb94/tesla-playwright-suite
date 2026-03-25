@@ -1,6 +1,8 @@
 node_modules/
 dist/
 test-results/
+# Auth storage state (contains session cookies — never commit)
+.auth/
 reports/
 allure-results/
 playwright-report/

@@ -1,12 +1,21 @@
 import { defineConfig, devices } from '@playwright/test';
+import path from 'path';
+
+// Auth storage produced by global-setup.ts — shared across all browser tests.
+// The file is created at suite start by globalSetup before any test runs.
+const STORAGE_STATE = path.join(__dirname, '.auth/tesla.json');
 
 export default defineConfig({
   testDir: './tests',
+  // global-setup runs once before the suite: boots a real Chrome session,
+  // solves any Cloudflare challenge, and saves the CF clearance cookie + storage.
+  globalSetup: './global-setup.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  // Limit parallelism when using real Chrome to avoid launch contention
-  workers: process.env.CI ? 4 : 3,
+  retries: process.env.CI ? 2 : 1,
+  // Sequential locally (workers:1) prevents Cloudflare rate-limiting from
+  // seeing many simultaneous fresh browser sessions from the same IP.
+  workers: process.env.CI ? 4 : 1,
 
   reporter: [
     ['html', { outputFolder: 'reports/html', open: 'never' }],
@@ -34,6 +43,9 @@ export default defineConfig({
     // Use the real installed Chrome binary — has a legitimate browser fingerprint
     // that passes Cloudflare bot detection, unlike Playwright's bundled Chromium
     channel: 'chrome',
+    // Reuse the Cloudflare clearance cookie obtained in global-setup so each
+    // test context starts already "trusted" and sub-pages load with 200.
+    storageState: STORAGE_STATE,
   },
 
   expect: {
@@ -52,15 +64,24 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         channel: 'chrome',   // Real Chrome — passes Cloudflare bot checks
+        // Inherits storageState from top-level `use` (CF clearance cookies)
       },
     },
     {
       name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      use: {
+        ...devices['Desktop Firefox'],
+        // CF clearance cookies are TLS-fingerprint bound to Chrome; skip
+        // storageState for Firefox to avoid invalid-cookie noise.
+        storageState: undefined,
+      },
     },
     {
       name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      use: {
+        ...devices['Desktop Safari'],
+        storageState: undefined,
+      },
     },
     {
       name: 'mobile-chrome',
@@ -71,13 +92,19 @@ export default defineConfig({
     },
     {
       name: 'mobile-safari',
-      use: { ...devices['iPhone 14'] },
+      use: {
+        ...devices['iPhone 14'],
+        storageState: undefined,
+      },
     },
     // API tests — no browser needed
     {
       name: 'api',
       testDir: './tests/api',
-      use: { baseURL: 'https://www.tesla.com' },
+      use: {
+        baseURL: 'https://www.tesla.com',
+        storageState: undefined,
+      },
     },
   ],
 
